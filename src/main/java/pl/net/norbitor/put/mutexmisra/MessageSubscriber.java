@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZMQ;
 import pl.net.norbitor.put.mutexmisra.message.Message;
+import pl.net.norbitor.put.mutexmisra.message.PingMessage;
 
 public class MessageSubscriber implements Runnable {
 
@@ -27,6 +28,10 @@ public class MessageSubscriber implements Runnable {
             // Read message contents
             byte[] contents = subscriber.recv();
             Message message = SerializationUtils.deserialize(contents);
+            if (message.getClass() == PingMessage.class) {
+                Thread t = new Thread(new Worker());
+                t.start();
+            }
             logger.info("Received: " + address + " : " + message);
             msgcnt++;
         }
