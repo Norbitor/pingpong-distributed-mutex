@@ -4,8 +4,16 @@ import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.function.Function;
+
 public class Worker implements Runnable {
     private final Logger logger = LoggerFactory.getLogger(Worker.class);
+
+    private final RingNode nodeRef;
+
+    public Worker(RingNode nodeRef) {
+        this.nodeRef = nodeRef;
+    }
 
     @Override
     public void run() {
@@ -17,5 +25,6 @@ public class Worker implements Runnable {
             e.printStackTrace();
         }
         logger.info("Finished CS computation.");
+        nodeRef.leaveCS();
     }
 }

@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZMQ;
 import pl.net.norbitor.put.mutexmisra.message.Message;
-import pl.net.norbitor.put.mutexmisra.util.NetworkUtil;
+import pl.net.norbitor.put.mutexmisra.util.AppUtil;
 
 public class MessagePublisher implements AutoCloseable {
     private final Logger logger = LoggerFactory.getLogger(MessagePublisher.class);
@@ -19,7 +19,7 @@ public class MessagePublisher implements AutoCloseable {
 
         context = ZMQ.context(1);
         publisher = context.socket(ZMQ.PUB);
-        publisher.bind(NetworkUtil.getZMQConnectionString(address, port));
+        publisher.bind(AppUtil.getZMQConnectionString(address, port));
         this.messageGroup = messageGroup;
 
         logger.info("Publisher started.");
