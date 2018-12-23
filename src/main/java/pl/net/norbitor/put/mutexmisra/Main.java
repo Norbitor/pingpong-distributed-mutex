@@ -2,24 +2,25 @@ package pl.net.norbitor.put.mutexmisra;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.net.norbitor.put.mutexmisra.network.MessagePublisher;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
     public static void main(String[] args) {
-        logger.info("Starting the ZMQ test app");
+        logger.info("Yet another POC");
+        Thread pubthr = new Thread(() -> {
+            try (MessagePublisher pub = new MessagePublisher("*", 5555, "A")) {
+                for (int i = 0; i < 10; i++) {
+                    Thread.sleep(1000);
+                    pub.sendMessage("Hello " + i + " time(s).");
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        Thread subthr = new Thread(new MessageSubscriber());
 
-        Thread serverThread = new Thread(new ZServer());
-        Thread clientThread = new Thread(new ZClient());
-
-        logger.info("Starting server thread");
-        serverThread.start();
-        try {
-            logger.debug("Performing small delay to avoid issues");
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        logger.info("Starting client thread");
-        clientThread.start();
+        subthr.start();
+        pubthr.start();
     }
 }
