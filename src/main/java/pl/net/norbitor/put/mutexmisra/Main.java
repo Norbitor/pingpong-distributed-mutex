@@ -2,6 +2,8 @@ package pl.net.norbitor.put.mutexmisra;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.net.norbitor.put.mutexmisra.message.PingMessage;
+import pl.net.norbitor.put.mutexmisra.message.PongMessage;
 import pl.net.norbitor.put.mutexmisra.network.MessagePublisher;
 
 public class Main {
@@ -10,9 +12,13 @@ public class Main {
         logger.info("Yet another POC");
         Thread pubthr = new Thread(() -> {
             try (MessagePublisher pub = new MessagePublisher("*", 5555, "A")) {
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < 20; i++) {
                     Thread.sleep(1000);
-                    pub.sendMessage("Hello " + i + " time(s).");
+                    if (i % 2 == 0) {
+                        pub.sendMessage(new PingMessage((i+1)/2));
+                    } else {
+                        pub.sendMessage(new PongMessage((i)/2));
+                    }
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
