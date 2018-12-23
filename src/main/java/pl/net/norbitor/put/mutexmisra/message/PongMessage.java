@@ -7,7 +7,8 @@ public class PongMessage implements Message {
         this.pongNumber = pongNumber;
     }
 
-    public int getPongNumber() {
+    @Override
+    public int getValue() {
         return pongNumber;
     }
 

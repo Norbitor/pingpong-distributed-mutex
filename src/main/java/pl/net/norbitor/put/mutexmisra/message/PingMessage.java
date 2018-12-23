@@ -9,7 +9,8 @@ public class PingMessage implements Message {
         this.pingNumber = pingNumber;
     }
 
-    public int getPingNumber() {
+    @Override
+    public int getValue() {
         return pingNumber;
     }
 
