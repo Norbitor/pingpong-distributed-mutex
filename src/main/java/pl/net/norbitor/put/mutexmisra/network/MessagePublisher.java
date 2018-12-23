@@ -1,13 +1,10 @@
 package pl.net.norbitor.put.mutexmisra.network;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeromq.ZMQ;
 import pl.net.norbitor.put.mutexmisra.message.Message;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 
 public class MessagePublisher implements AutoCloseable {
     private final Logger logger = LoggerFactory.getLogger(MessagePublisher.class);
@@ -29,17 +26,9 @@ public class MessagePublisher implements AutoCloseable {
 
     public void sendMessage(Message message) {
         logger.info("Publishing message: " + message);
-        try {
-            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteStream);
-            objectOutputStream.writeObject(message);
-            objectOutputStream.close();
-            publisher.sendMore(messageGroup);
-            publisher.send(byteStream.toByteArray());
-            byteStream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        byte[] messageBytes = SerializationUtils.serialize(message);
+        publisher.sendMore(messageGroup);
+        publisher.send(messageBytes);
     }
 
     @Override
