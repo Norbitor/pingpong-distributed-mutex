@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import pl.net.norbitor.put.mutexmisra.message.PingMessage;
 import pl.net.norbitor.put.mutexmisra.message.PongMessage;
 import pl.net.norbitor.put.mutexmisra.network.MessagePublisher;
+import pl.net.norbitor.put.mutexmisra.network.MessageSubscriber;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
@@ -24,7 +25,7 @@ public class Main {
                 e.printStackTrace();
             }
         });
-        Thread subthr = new Thread(new MessageSubscriber());
+        Thread subthr = new Thread(new MessageSubscriber("localhost", 5555, "A"));
 
         subthr.start();
         pubthr.start();
