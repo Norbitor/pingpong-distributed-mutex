@@ -25,9 +25,12 @@ public class Main {
                 e.printStackTrace();
             }
         });
-        Thread subthr = new Thread(new MessageSubscriber("localhost", 5555, "A"));
+        //Thread subthr = new Thread(new MessageSubscriber("localhost", 5555, "A"));
 
-        subthr.start();
-        pubthr.start();
+        //subthr.start();
+        //pubthr.start();
+
+        RingNode node = new RingNode();
+        node.start();
     }
 }
