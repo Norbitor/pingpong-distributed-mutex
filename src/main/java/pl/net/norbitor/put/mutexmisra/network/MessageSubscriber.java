@@ -47,6 +47,7 @@ public class MessageSubscriber implements Runnable {
             // Read message contents
             byte[] contents = subscriber.recv();
             Message message = SerializationUtils.deserialize(contents);
+            logger.info("Received: " + address + " : " + message);
             if (message.getClass() == PingMessage.class) {
                 nodeRef.receivePing((PingMessage)message);
             } else if (message.getClass() == PongMessage.class) {
@@ -54,7 +55,6 @@ public class MessageSubscriber implements Runnable {
             } else {
                 logger.warn("Unknown message received");
             }
-            logger.info("Received: " + address + " : " + message);
             msgcnt++;
         }
         logger.info("Closing Subscriber");

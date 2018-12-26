@@ -1,5 +1,6 @@
 package pl.net.norbitor.put.mutexmisra;
 
+import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.net.norbitor.put.mutexmisra.message.Message;
@@ -14,11 +15,13 @@ public class RingNode {
     private final Logger logger = LoggerFactory.getLogger(RingNode.class);
 
     private int lastToken = 0;
-    private int receivedPing;
+    private int receivedPing = 1;
+    private int receivedPong = -1;
     private int nodeId;
     private int nodeNumber;
     private MessageSubscriber subscriber;
     private MessagePublisher publisher;
+    private Thread csThread;
 
     public RingNode() {
         this.nodeId = 1;
@@ -34,6 +37,7 @@ public class RingNode {
         if (nodeId == 1) {
             logger.info("This is first node, assuming token possession");
             new Worker(this).run();
+            incarnate(receivedPing);
         }
     }
 
@@ -42,42 +46,62 @@ public class RingNode {
         receivedPing = msg.getValue();
         if (msg.getValue() == lastToken) {
             logger.warn("Pong message loss detected");
-            regenerate();
+            regenerate(receivedPing);
+        } else {
+            lastToken = msg.getValue();
         }
-        new Worker(this).run();
+        csThread = new Thread(new Worker(this));
+        csThread.start();
     }
 
     public void receivePong(PongMessage msg) {
         logger.info("Pong message received (" + msg.getValue() + ") last token: " + lastToken);
+        receivedPong = msg.getValue();
         if (msg.getValue() == lastToken) {
             logger.warn("Ping message loss detected");
-            regenerate();
+            regenerate(receivedPong);
+        } else {
+            lastToken = msg.getValue();
+        }
+        try {
+            csThread.join();
+            leaveCS();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 
     public void leaveCS() {
         logger.info("Leaving Critical Section");
-        incarnate();
+        incarnate(receivedPing);
     }
 
-    private void regenerate() {
+    private void regenerate(int value) {
         logger.info("Regenerating Ping and Pong messages");
-        PingMessage pingMessage = new PingMessage(Math.abs(nodeId));
+        PingMessage pingMessage = new PingMessage(Math.abs(value));
         PongMessage pongMessage = AppUtil.getPongFromPing(pingMessage);
         publishMessage(pingMessage);
         publishMessage(pongMessage);
     }
 
-    private void incarnate() {
+    private void incarnate(int value) {
         logger.info("Incarnating Ping and Pong messages");
-        PingMessage pingMessage = new PingMessage(Math.abs((lastToken + 1) % nodeNumber));
+        PingMessage pingMessage = new PingMessage(Math.abs((value + 1)));
         PongMessage pongMessage = AppUtil.getPongFromPing(pingMessage);
-        publishMessage(pingMessage);
-        publishMessage(pongMessage);
+        int loss = RandomUtils.nextInt(0,4);
+        if (loss != 3) {
+            publishMessage(pingMessage);
+        } else {
+            logger.warn("Will loss PING");
+        }
+        if (RandomUtils.nextInt(0,4) != 3 || loss == 3) {
+            publishMessage(pongMessage);
+        } else {
+            logger.warn("Will loss PONG");
+        }
     }
 
     private void publishMessage(Message message) {
-        lastToken = message.getValue();
         publisher.sendMessage(message);
     }
 }

@@ -25,6 +25,5 @@ public class Worker implements Runnable {
             e.printStackTrace();
         }
         logger.info("Finished CS computation.");
-        nodeRef.leaveCS();
     }
 }
