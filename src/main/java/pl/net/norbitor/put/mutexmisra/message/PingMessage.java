@@ -1,7 +1,5 @@
 package pl.net.norbitor.put.mutexmisra.message;
 
-import java.io.Serializable;
-
 public class PingMessage implements Message {
     private final int pingNumber;
 
@@ -16,8 +14,6 @@ public class PingMessage implements Message {
 
     @Override
     public String toString() {
-        return "PingMessage{" +
-                "pingNumber=" + pingNumber +
-                '}';
+        return "PingMessage[" + pingNumber + ']';
     }
 }

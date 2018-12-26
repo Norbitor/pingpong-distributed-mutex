@@ -14,8 +14,6 @@ public class PongMessage implements Message {
 
     @Override
     public String toString() {
-        return "PongMessage{" +
-                "pongNumber=" + pongNumber +
-                '}';
+        return "PongMessage[" + pongNumber + ']';
     }
 }
