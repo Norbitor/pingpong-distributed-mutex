@@ -2,7 +2,6 @@ package pl.net.norbitor.put.mutexmisra;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.net.norbitor.put.mutexmisra.message.Message;
 import pl.net.norbitor.put.mutexmisra.message.PingMessage;
 import pl.net.norbitor.put.mutexmisra.message.PongMessage;
 import pl.net.norbitor.put.mutexmisra.network.MessagePublisher;
