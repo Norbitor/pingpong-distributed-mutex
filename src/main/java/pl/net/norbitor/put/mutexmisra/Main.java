@@ -30,7 +30,16 @@ public class Main {
         //subthr.start();
         //pubthr.start();
 
-        RingNode node = new RingNode();
-        node.start();
+        Thread node1 = new Thread(() -> {
+            RingNode node = new RingNode("localhost:5556", 5555, 1);
+            node.start();
+        }, "Node-1");
+        Thread node2 = new Thread(() -> {
+            RingNode node = new RingNode("localhost:5555", 5556, 2);
+            node.start();
+        }, "Node-2");
+
+        node1.start();
+        node2.start();
     }
 }

@@ -15,20 +15,24 @@ public class RingNode {
     private int lastToken = 0;
     private int pingNumber = 1;
     private int pongNumber = -1;
+
+    private boolean havePing = false;
+    private boolean havePong = false;
+
     private int nodeId;
     private MessageSubscriber subscriber;
     private MessagePublisher publisher;
     private Thread csThread;
 
-    public RingNode() {
-        this.nodeId = 1;
-        this.subscriber = new MessageSubscriber("localhost:5555", "A", this);
-        this.publisher = new MessagePublisher("*", 5555, "A");
+    public RingNode(String subaddr, int pubport, int nodeId) {
+        this.nodeId = nodeId;
+        this.subscriber = new MessageSubscriber(subaddr, "A", this);
+        this.publisher = new MessagePublisher("*", pubport, "A");
     }
 
     public void start() {
         logger.info("Starting Ring Node...");
-        Thread subscriberThread = new Thread(subscriber, "subscriber");
+        Thread subscriberThread = new Thread(subscriber, "subscriber-"+nodeId);
         subscriberThread.start();
         if (nodeId == 1) {
             initialProcessing();
@@ -37,22 +41,18 @@ public class RingNode {
 
     private void initialProcessing() {
         logger.info("This is first node, assuming token possession and starting CS");
+        this.havePing = true;
+        this.havePong = true;
         new Worker(this).run();
-        incarnate(pingNumber);
-        PingMessage pingMessage = new PingMessage(this.pingNumber);
-        PongMessage pongMessage = new PongMessage(this.pongNumber);
-        this.publisher.sendMessage(pingMessage);
-        this.publisher.sendMessage(pongMessage);
     }
 
     public void receivePing(PingMessage msg) {
         logger.info("Ping message received (" + msg.getValue() + ") last token: " + lastToken);
-        pingNumber = msg.getValue();
+        this.havePing = true;
+        this.pingNumber = msg.getValue();
         if (msg.getValue() == lastToken) {
             logger.warn("Pong message loss detected");
             regenerate(pingNumber);
-        } else {
-            lastToken = msg.getValue();
         }
         csThread = new Thread(new Worker(this));
         csThread.start();
@@ -60,24 +60,40 @@ public class RingNode {
 
     public void receivePong(PongMessage msg) {
         logger.info("Pong message received (" + msg.getValue() + ") last token: " + lastToken);
+        this.havePong = true;
         pongNumber = msg.getValue();
         if (msg.getValue() == lastToken) {
             logger.warn("Ping message loss detected");
             regenerate(pongNumber);
-        } else {
-            lastToken = msg.getValue();
         }
-        try {
-            csThread.join();
-            leaveCS();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (!this.havePing) {
+            sendPong(this.pongNumber);
         }
     }
 
     public void leaveCS() {
         logger.info("Leaving Critical Section");
-        incarnate(pingNumber);
+        if (this.havePong) {
+            incarnate(this.pingNumber);
+            sendPing(this.pingNumber);
+            sendPong(this.pongNumber);
+        } else {
+            sendPing(this.pingNumber);
+        }
+    }
+
+    private void sendPing(int value) {
+        PingMessage pingMessage = new PingMessage(value);
+        this.havePing = false;
+        this.lastToken = this.pingNumber;
+        publisher.sendMessage(pingMessage);
+    }
+
+    private void sendPong(int value) {
+        PongMessage pongMessage = new PongMessage(value);
+        this.havePong = false;
+        this.lastToken = this.pongNumber;
+        publisher.sendMessage(pongMessage);
     }
 
     private void regenerate(int value) {
