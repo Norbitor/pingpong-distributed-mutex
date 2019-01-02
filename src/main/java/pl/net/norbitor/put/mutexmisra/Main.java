@@ -2,26 +2,30 @@ package pl.net.norbitor.put.mutexmisra;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pl.net.norbitor.put.mutexmisra.message.PingMessage;
-import pl.net.norbitor.put.mutexmisra.message.PongMessage;
-import pl.net.norbitor.put.mutexmisra.network.MessagePublisher;
-import pl.net.norbitor.put.mutexmisra.network.MessageSubscriber;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
+
     public static void main(String[] args) {
-        logger.info("Yet another POC");
+        if (args.length < 3) {
+            printHelp();
+            return;
+        }
 
-        Thread node1 = new Thread(() -> {
-            RingNode node = new RingNode("localhost:5556", 5555, 1);
-            node.start();
-        }, "Node-1");
-        Thread node2 = new Thread(() -> {
-            RingNode node = new RingNode("localhost:5555", 5556, 2);
-            node.start();
-        }, "Node-2");
+        String previousNode = args[0];
+        String listenPort = args[1];
+        String nodeId = args[2];
 
-        node1.start();
-        node2.start();
+        RingNode node = new RingNode(previousNode, Integer.parseInt(listenPort), Integer.parseInt(nodeId));
+        node.start();
+    }
+
+    private static void printHelp() {
+        System.out.println("Usage: mutexmisra previous_node publish_port node_id\n" +
+                           "    previous_node - IP and port of previous node\n" +
+                           "    publish_port  - a port where app will publish messages\n" +
+                           "    node_id       - ID of this node\n" +
+                           "      Notice: The node with ID=1 have to be run last!\n\n" +
+                           "EXAMPLE: mutexmisra 192.168.1.10:5555 5555 1");
     }
 }
