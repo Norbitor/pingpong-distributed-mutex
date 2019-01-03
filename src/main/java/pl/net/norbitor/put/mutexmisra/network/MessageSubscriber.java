@@ -12,7 +12,7 @@ import pl.net.norbitor.put.mutexmisra.util.AppUtil;
 
 public class MessageSubscriber implements Runnable {
 
-    private final Logger logger = LoggerFactory.getLogger(MessageSubscriber.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageSubscriber.class);
 
     private final String connectionString;
     private final String messageGroup;
@@ -32,7 +32,7 @@ public class MessageSubscriber implements Runnable {
 
     @Override
     public void run() {
-        logger.info("Subscriber test class starting");
+        LOG.info("Subscriber test class starting");
 
         int msgcnt = 0;
         ZMQ.Context context = ZMQ.context(1);
@@ -40,24 +40,24 @@ public class MessageSubscriber implements Runnable {
 
         subscriber.connect(connectionString);
         subscriber.subscribe(messageGroup);
-        logger.info("Subscriber listens to " + connectionString + " for group " + messageGroup);
-        while (msgcnt < 20) {
+        LOG.info("Subscriber listens to " + connectionString + " for group " + messageGroup);
+        while (msgcnt < 20) { // very temporary solution TO DELETE later
             // Read envelope with address
             String address = subscriber.recvStr ();
             // Read message contents
             byte[] contents = subscriber.recv();
             Message message = SerializationUtils.deserialize(contents);
-            logger.info("Received: " + address + " : " + message);
+            LOG.info("Received: " + address + " : " + message);
             if (message.getClass() == PingMessage.class) {
                 nodeRef.receivePing((PingMessage)message);
             } else if (message.getClass() == PongMessage.class) {
                 nodeRef.receivePong((PongMessage) message);
             } else {
-                logger.warn("Unknown message received");
+                LOG.warn("Unknown message received");
             }
             msgcnt++;
         }
-        logger.info("Closing Subscriber");
+        LOG.info("Closing Subscriber");
         subscriber.close();
         context.term ();
     }

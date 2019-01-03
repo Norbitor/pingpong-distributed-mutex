@@ -8,25 +8,25 @@ import pl.net.norbitor.put.mutexmisra.message.Message;
 import pl.net.norbitor.put.mutexmisra.util.AppUtil;
 
 public class MessagePublisher implements AutoCloseable {
-    private final Logger logger = LoggerFactory.getLogger(MessagePublisher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessagePublisher.class);
 
     private final ZMQ.Context context;
     private final ZMQ.Socket publisher;
     private final String messageGroup;
 
     public MessagePublisher(String address, int port, String messageGroup) {
-        logger.info("Starting Publisher for " + address + ":" + port + ", publishing for group: " + messageGroup);
+        LOG.info("Starting Publisher for " + address + ":" + port + ", publishing for group: " + messageGroup);
 
         context = ZMQ.context(1);
         publisher = context.socket(ZMQ.PUB);
         publisher.bind(AppUtil.getZMQConnectionString(address, port));
         this.messageGroup = messageGroup;
 
-        logger.info("Publisher started.");
+        LOG.info("Publisher started.");
     }
 
     public void sendMessage(Message message) {
-        logger.info("Publishing message: " + message);
+        LOG.info("Publishing message: " + message);
         byte[] messageBytes = SerializationUtils.serialize(message);
         publisher.sendMore(messageGroup);
         publisher.send(messageBytes);
@@ -34,7 +34,7 @@ public class MessagePublisher implements AutoCloseable {
 
     @Override
     public void close() {
-        logger.info("Closing Publisher");
+        LOG.info("Closing Publisher");
         publisher.close();
         context.term();
     }
