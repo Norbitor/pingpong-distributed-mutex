@@ -14,6 +14,11 @@ public class RingNode {
     private static final String PUBLISHING_ADDRESS = "*";
     private static final String SUBSCRIBER_THREAD_PREFIX = "subscriber-";
 
+    private final int totalNodes;
+    private final int nodeId;
+    private final MessageSubscriber subscriber;
+    private final MessagePublisher publisher;
+
     private int lastToken = 0;
     private int pingNumber = 1;
     private int pongNumber = -1;
@@ -21,12 +26,8 @@ public class RingNode {
     private boolean havePing = false;
     private boolean havePong = false;
 
-    private int nodeId;
-    private MessageSubscriber subscriber;
-    private MessagePublisher publisher;
-    private Thread csThread;
-
-    public RingNode(String subscribedAddress, int publishingPort, int nodeId) {
+    public RingNode(String subscribedAddress, int publishingPort, int nodeId, int totalNodes) {
+        this.totalNodes = totalNodes;
         this.nodeId = nodeId;
         this.subscriber = new MessageSubscriber(subscribedAddress, MESSAGE_GROUP, this);
         this.publisher = new MessagePublisher(PUBLISHING_ADDRESS, publishingPort, MESSAGE_GROUP);
@@ -56,7 +57,7 @@ public class RingNode {
             LOG.warn("Pong message loss detected");
             regenerate(pingNumber);
         }
-        csThread = new Thread(new Worker(this));
+        Thread csThread = new Thread(new Worker(this));
         csThread.start();
     }
 
@@ -106,7 +107,8 @@ public class RingNode {
 
     private void incarnate(int value) {
         LOG.info("Incarnating Ping and Pong messages");
-        this.pingNumber = Math.abs(value) + 1;
+        int pingModulus = (Math.abs(value) + 1) % (totalNodes + 1);
+        this.pingNumber = pingModulus == 0 ? pingModulus + 1 : pingModulus;
         this.pongNumber = -this.pingNumber;
     }
 }

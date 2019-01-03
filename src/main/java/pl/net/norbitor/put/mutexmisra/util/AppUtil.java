@@ -49,6 +49,6 @@ public class AppUtil {
         } catch (NumberFormatException e) {
             throw new ValidationException("The node ID is not valid positive integer", e);
         }
-        return 0;
+        return nodeId;
     }
 }
