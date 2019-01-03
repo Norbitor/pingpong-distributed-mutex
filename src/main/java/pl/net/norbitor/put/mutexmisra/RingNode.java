@@ -9,7 +9,10 @@ import pl.net.norbitor.put.mutexmisra.network.MessageSubscriber;
 
 public class RingNode {
 
-    private final Logger logger = LoggerFactory.getLogger(RingNode.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RingNode.class);
+    private static final String MESSAGE_GROUP = "A";
+    private static final String PUBLISHING_ADDRESS = "*";
+    private static final String SUBSCRIBER_THREAD_PREFIX = "subscriber-";
 
     private int lastToken = 0;
     private int pingNumber = 1;
@@ -23,15 +26,15 @@ public class RingNode {
     private MessagePublisher publisher;
     private Thread csThread;
 
-    public RingNode(String subaddr, int pubport, int nodeId) {
+    public RingNode(String subscribedAddress, int publishingPort, int nodeId) {
         this.nodeId = nodeId;
-        this.subscriber = new MessageSubscriber(subaddr, "A", this);
-        this.publisher = new MessagePublisher("*", pubport, "A");
+        this.subscriber = new MessageSubscriber(subscribedAddress, MESSAGE_GROUP, this);
+        this.publisher = new MessagePublisher(PUBLISHING_ADDRESS, publishingPort, MESSAGE_GROUP);
     }
 
     public void start() {
-        logger.info("Starting Ring Node...");
-        Thread subscriberThread = new Thread(subscriber, "subscriber-"+nodeId);
+        LOG.info("Starting Ring Node...");
+        Thread subscriberThread = new Thread(subscriber, SUBSCRIBER_THREAD_PREFIX + nodeId);
         subscriberThread.start();
         if (nodeId == 1) {
             initialProcessing();
@@ -39,18 +42,18 @@ public class RingNode {
     }
 
     private void initialProcessing() {
-        logger.info("This is first node, assuming token possession and starting CS");
+        LOG.info("This is first node, assuming token possession and starting CS");
         this.havePing = true;
         this.havePong = true;
         new Worker(this).run();
     }
 
     public void receivePing(PingMessage msg) {
-        logger.info("Ping message received (" + msg.getValue() + ") last token: " + lastToken);
+        LOG.info("Ping message received (" + msg.getValue() + ") last token: " + lastToken);
         this.havePing = true;
         this.pingNumber = msg.getValue();
         if (msg.getValue() == lastToken) {
-            logger.warn("Pong message loss detected");
+            LOG.warn("Pong message loss detected");
             regenerate(pingNumber);
         }
         csThread = new Thread(new Worker(this));
@@ -58,11 +61,11 @@ public class RingNode {
     }
 
     public void receivePong(PongMessage msg) {
-        logger.info("Pong message received (" + msg.getValue() + ") last token: " + lastToken);
+        LOG.info("Pong message received (" + msg.getValue() + ") last token: " + lastToken);
         this.havePong = true;
         pongNumber = msg.getValue();
         if (msg.getValue() == lastToken) {
-            logger.warn("Ping message loss detected");
+            LOG.warn("Ping message loss detected");
             regenerate(pongNumber);
         }
         if (!this.havePing) {
@@ -71,7 +74,7 @@ public class RingNode {
     }
 
     public void leaveCS() {
-        logger.info("Leaving Critical Section");
+        LOG.info("Leaving Critical Section");
         if (this.havePong) {
             incarnate(this.pingNumber);
             sendPing(this.pingNumber);
@@ -96,13 +99,13 @@ public class RingNode {
     }
 
     private void regenerate(int value) {
-        logger.info("Regenerating Ping and Pong messages");
+        LOG.info("Regenerating Ping and Pong messages");
         this.pingNumber = Math.abs(value);
         this.pongNumber = -this.pingNumber;
     }
 
     private void incarnate(int value) {
-        logger.info("Incarnating Ping and Pong messages");
+        LOG.info("Incarnating Ping and Pong messages");
         this.pingNumber = Math.abs(value) + 1;
         this.pongNumber = -this.pingNumber;
     }
