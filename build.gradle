@@ -22,3 +22,7 @@ dependencies {
 application {
     mainClassName = 'pl.net.norbitor.put.mutexmisra.Main'
 }
+
+run {
+    standardInput = System.in
+}

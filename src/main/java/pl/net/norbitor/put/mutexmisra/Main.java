@@ -18,12 +18,14 @@ public class Main {
         int listenPort;
         int nodeId;
         int totalNodes;
+        boolean interactive;
 
         try {
             previousNode = AppUtil.validateStringWithAddressAndPort(args[0]);
             listenPort = AppUtil.validateStringWithPort(args[1]);
             nodeId = AppUtil.validateStringWithNodeId(args[2]);
             totalNodes = AppUtil.validateStringWithNodeId(args[3]);
+            interactive = args.length == 5;
         } catch (ValidationException e) {
             System.out.println("An error occurred while validating parameters: " + e.getMessage() +
                     "\nPlease refer to the usage instructions below:");
@@ -32,17 +34,18 @@ public class Main {
         }
 
         LOG.info("Starting ring node with ID=" + nodeId);
-        RingNode node = new RingNode(previousNode, listenPort, nodeId, totalNodes);
+        RingNode node = new RingNode(previousNode, listenPort, nodeId, totalNodes, interactive);
         node.start();
     }
 
     private static void printHelp() {
-        System.out.println("Usage: mutexmisra previous_node publish_port node_id total_nodes\n" +
+        System.out.println("Usage: mutexmisra previous_node publish_port node_id total_nodes [interactive]\n" +
                 "    previous_node - IP and port of previous node\n" +
                 "    publish_port  - a port where app will publish messages\n" +
                 "    node_id       - numeric ID of this node\n" +
                 "      Notice: The node with ID=1 is primary and have to be run as last!\n" +
-                "    total_nodes   - total amount of nodes in the ring\n\n" +
+                "    total_nodes   - total amount of nodes in the ring\n" +
+                "    interactive   - ask user to lose message in round\n\n" +
                 "EXAMPLE: mutexmisra 192.168.1.10:5555 5555 1");
     }
 }

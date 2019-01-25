@@ -7,6 +7,10 @@ import pl.net.norbitor.put.mutexmisra.message.PongMessage;
 import pl.net.norbitor.put.mutexmisra.network.MessagePublisher;
 import pl.net.norbitor.put.mutexmisra.network.MessageSubscriber;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 public class RingNode {
 
     private static final Logger LOG = LoggerFactory.getLogger(RingNode.class);
@@ -18,6 +22,7 @@ public class RingNode {
     private final int nodeId;
     private final MessageSubscriber subscriber;
     private final MessagePublisher publisher;
+    private final boolean interactive;
 
     private int lastToken = 0;
     private int pingNumber = 1;
@@ -26,11 +31,15 @@ public class RingNode {
     private boolean havePing = false;
     private boolean havePong = false;
 
-    public RingNode(String subscribedAddress, int publishingPort, int nodeId, int totalNodes) {
+    private boolean tokenloss = false;
+    private boolean regenerate = false;
+
+    public RingNode(String subscribedAddress, int publishingPort, int nodeId, int totalNodes, boolean interactive) {
         this.totalNodes = totalNodes;
         this.nodeId = nodeId;
         this.subscriber = new MessageSubscriber(subscribedAddress, MESSAGE_GROUP, this);
         this.publisher = new MessagePublisher(PUBLISHING_ADDRESS, publishingPort, MESSAGE_GROUP);
+        this.interactive = interactive;
     }
 
     public void start() {
@@ -57,6 +66,7 @@ public class RingNode {
             LOG.warn("Pong message loss detected");
             regenerate(pingNumber);
         }
+        tokenloss = false;
         Thread csThread = new Thread(new Worker(this));
         csThread.start();
     }
@@ -69,6 +79,7 @@ public class RingNode {
             LOG.warn("Ping message loss detected");
             regenerate(pongNumber);
         }
+        tokenloss = false;
         if (!this.havePing) {
             sendPong(this.pongNumber);
         }
@@ -89,20 +100,39 @@ public class RingNode {
         PingMessage pingMessage = new PingMessage(value);
         this.havePing = false;
         this.lastToken = this.pingNumber;
-        publisher.sendMessage(pingMessage);
+        if (interactive && !tokenloss && shouldLoseToken()) {
+            LOG.warn("Going to lose PING");
+            this.tokenloss = true;
+        } else {
+            publisher.sendMessage(pingMessage);
+            if (this.regenerate) {
+                this.regenerate = false;
+                sendPing(-value);
+            }
+        }
     }
 
     private void sendPong(int value) {
+        if (this.regenerate) {
+            this.regenerate = false;
+            sendPing(value);
+        }
         PongMessage pongMessage = new PongMessage(value);
         this.havePong = false;
         this.lastToken = this.pongNumber;
-        publisher.sendMessage(pongMessage);
+        if (interactive && !tokenloss && shouldLoseToken()) {
+            LOG.warn("Going to lose PONG");
+            this.tokenloss = true;
+        } else {
+            publisher.sendMessage(pongMessage);
+        }
     }
 
     private void regenerate(int value) {
         LOG.info("Regenerating Ping and Pong messages");
         this.pingNumber = Math.abs(value);
         this.pongNumber = -this.pingNumber;
+        this.regenerate = true;
     }
 
     private void incarnate(int value) {
@@ -110,5 +140,19 @@ public class RingNode {
         int pingModulus = (Math.abs(value) + 1) % (totalNodes + 1);
         this.pingNumber = pingModulus == 0 ? pingModulus + 1 : pingModulus;
         this.pongNumber = -this.pingNumber;
+    }
+
+    private boolean shouldLoseToken() {
+        System.out.print("Would you like to lose this token (Y/N): ");
+        try {
+            // When I was trying to use try-with-resources it failed.
+            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+            String line = reader.readLine();
+            line = line.toLowerCase();
+            return line.startsWith("y");
+        } catch (IOException e) {
+            LOG.warn("Something went wrong while reading user input", e);
+            return false;
+        }
     }
 }
