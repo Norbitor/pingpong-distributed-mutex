@@ -34,31 +34,27 @@ public class MessageSubscriber implements Runnable {
     public void run() {
         LOG.info("Subscriber test class starting");
 
-        int msgcnt = 0;
         ZMQ.Context context = ZMQ.context(1);
         ZMQ.Socket subscriber = context.socket(ZMQ.SUB);
 
         subscriber.connect(connectionString);
         subscriber.subscribe(messageGroup);
         LOG.info("Subscriber listens to " + connectionString + " for group " + messageGroup);
-        while (msgcnt < 20) { // very temporary solution TO DELETE later
-            // Read envelope with address
-            String address = subscriber.recvStr ();
-            // Read message contents
-            byte[] contents = subscriber.recv();
-            Message message = SerializationUtils.deserialize(contents);
-            LOG.info("Received: " + address + " : " + message);
-            if (message.getClass() == PingMessage.class) {
-                nodeRef.receivePing((PingMessage)message);
-            } else if (message.getClass() == PongMessage.class) {
-                nodeRef.receivePong((PongMessage) message);
-            } else {
-                LOG.warn("Unknown message received");
-            }
-            msgcnt++;
+        // Read envelope with address
+        String address = subscriber.recvStr();
+        // Read message contents
+        byte[] contents = subscriber.recv();
+        Message message = SerializationUtils.deserialize(contents);
+        LOG.info("Received: " + address + " : " + message);
+        if (message.getClass() == PingMessage.class) {
+            nodeRef.receivePing((PingMessage) message);
+        } else if (message.getClass() == PongMessage.class) {
+            nodeRef.receivePong((PongMessage) message);
+        } else {
+            LOG.warn("Unknown message received");
         }
         LOG.info("Closing Subscriber");
         subscriber.close();
-        context.term ();
+        context.term();
     }
 }
